@@ -13,7 +13,7 @@ import os
 logging.basicConfig(filename='bot_logs.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-### VERSION V12_20240924_DEBUG
+### VERSION V13_20241031_DEBUG
 # MODIFICACIONES: TRAILING STOP OPTIMIZADO
 #                 PRIMERA ORDEN POR COSTO EN DOLARES
 #                 AMOUNT REDONDEADO SI SYMBOL ES MENOR A COSTO
