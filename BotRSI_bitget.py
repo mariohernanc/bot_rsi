@@ -322,21 +322,25 @@ class trader():
                     if position['symbol'] == self.symbol:
                         if position['side'] == 'long' and position['contracts'] > 0:
                             position_found_long = True
-                            # Mantener el valor original de `buycount` del __init__
+                            self.total_amount_long = float(position['contracts'])
+                            
                         elif position['side'] == 'short' and position['contracts'] > 0:
                             position_found_short = True
-                            # Mantener el valor original de `sellcount` del __init__
+                            self.total_amount_short = float(position['contracts'])
+                            
 
                 # Si no se encontró ninguna posición abierta para el símbolo, establecer `buycount` o `sellcount` en 0
                 if not position_found_long:
                     if self.side == 'buy':
                         self.buycount = 0
                         self.tradecount_long = 0
+                        self.total_amount_long = self.amount
 
                 if not position_found_short:
                     if self.side == 'sell':
                         self.sellcount = 0
                         self.tradecount_short = 0
+                        self.total_amount_short = self.amount
             
             # Calcular las cantidades de orden antes de los bloques if/elif
             self.order_amount_long = self.amount * (1 + (self.incre_amt_percent_long * self.buycount))
@@ -344,11 +348,17 @@ class trader():
                 # create market-order
 
             if self.side == 'buy':
-                result = ex.create_order(
-                    self.symbol, 'market', self.side, self.order_amount_long)
+                result = ex.create_order(self.symbol, 'market', self.side, self.order_amount_long)
+                fecha_actual = datetime.datetime.now()
+                fecha_formateada = fecha_actual.strftime("%Y-%m-%d %H:%M:%S")
+                print(f'{Fore.GREEN}Date: {fecha_formateada} -- Long a precio de mercado: {self.current_close} -- Total_Long_Amount: {self.order_amount_long}')
+                logging.info(f'Total contratos comprados: {self.order_amount_long} -- Long a precio mercado: {self.current_close}')
             elif self.side == 'sell':
-                result = ex.create_order(
-                    self.symbol, 'market', self.side, self.order_amount_short)
+                fecha_actual = datetime.datetime.now()
+                fecha_formateada = fecha_actual.strftime("%Y-%m-%d %H:%M:%S")
+                result = ex.create_order(self.symbol, 'market', self.side, self.order_amount_short)
+                print(f'{Fore.RED}Date: {fecha_formateada} -- Short a precio de mercado: {self.current_close} -- Total_Short_Amount: {self.order_amount_short}')
+                logging.info(f'Total contratos vendidos: {self.order_amount_short} -- Orden a precio mercado: {self.current_close}')
 
 
             # Solo proceder si hay un resultado válido de la orden creada
@@ -356,16 +366,17 @@ class trader():
                 # Actualizar los contadores y precios según el resultado de la orden
                 if self.side == 'buy':
                     self.tradecount_long += 1
-                    self.total_amount_long = float(self.order_amount_long)
                     self.buycount += 1
                     self.buy_count += 1
                     self.buy_active = True
+                    
                 elif self.side == 'sell':
                     self.tradecount_short += 1
-                    self.total_amount_short = float(self.order_amount_short)
                     self.sellcount += 1
                     self.sell_count += 1
                     self.sell_active = True
+
+            
 
             # Guardar el estado después de crear la orden
             self.save_state()
@@ -394,12 +405,16 @@ class trader():
                     if position['symbol'] == self.symbol:
                         if position['side'] == 'long' and position['contracts'] > 0:
                             self.last_buy_price = float(position['entryPrice'])
+                            self.total_amount_long = float(position['contracts'])
                         elif position['side'] == 'short' and position['contracts'] > 0:
                             self.last_sell_price = float(position['entryPrice'])
+                            self.total_amount_short = float(position['contracts'])
             else:
                 # No hay posiciones abiertas, mantenemos last_buy_price y last_sell_price en 0
                 self.last_buy_price = 0
                 self.last_sell_price = 0
+                self.total_amount_long = self.amount
+                self.total_amount_short = self.amount
 
             # Debugging Print para self.last_price
             print(f"[DEBUG] - Last Price (self.last_price): {self.last_price}")
