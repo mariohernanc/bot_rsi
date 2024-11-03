@@ -13,7 +13,7 @@ import os
 logging.basicConfig(filename='bot_logs.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-### VERSION V13_20241031_DEBUG
+### VERSION V13_20241029_DEBUG
 # MODIFICACIONES: TRAILING STOP OPTIMIZADO
 #                 PRIMERA ORDEN POR COSTO EN DOLARES
 #                 AMOUNT REDONDEADO SI SYMBOL ES MENOR A COSTO
@@ -337,7 +337,7 @@ class trader():
                     if self.side == 'sell':
                         self.sellcount = 0
                         self.tradecount_short = 0
-                  
+            
             # Calcular las cantidades de orden antes de los bloques if/elif
             self.order_amount_long = self.amount * (1 + (self.incre_amt_percent_long * self.buycount))
             self.order_amount_short = self.amount * (1 + (self.incre_amt_percent_short * self.sellcount))
@@ -351,56 +351,23 @@ class trader():
                     self.symbol, 'market', self.side, self.order_amount_short)
 
 
-            if self.side == 'buy' and res[-1]['side'] == 'long':
-                result = res[-1]
-            elif self.side == 'buy' and res[-2]['side'] == 'long':
-                result = res[-2]
-            elif self.side == 'sell' and res[-1]['side'] == 'short':
-                result = res[-1]
-            elif self.side == 'sell' and res[-2]['side'] == 'short':
-                result = res[-2]
-            else:
-                print('!!! major error = check entry mode....')
+            # Solo proceder si hay un resultado válido de la orden creada
+            if result:
+                # Actualizar los contadores y precios según el resultado de la orden
+                if self.side == 'buy':
+                    self.tradecount_long += 1
+                    self.total_amount_long = float(self.order_amount_long)
+                    self.buycount += 1
+                    self.buy_count += 1
+                    self.buy_active = True
+                elif self.side == 'sell':
+                    self.tradecount_short += 1
+                    self.total_amount_short = float(self.order_amount_short)
+                    self.sellcount += 1
+                    self.sell_count += 1
+                    self.sell_active = True
 
-            if self.side == 'buy':
-                self.tradecount_long += 1
-            elif self.side == 'sell':
-                self.tradecount_short += 1
-            if self.side == 'buy':
-                self.total_amount_long = float(result['contracts'])
-            elif self.side == 'sell':
-                self.total_amount_short = float(result['contracts'])
-
-            if self.side == 'buy':
-                self.buy_sl_price = float(result['entryPrice']) * (1-self.sl)
-                self.buy_tp_price = float(result['entryPrice']) * (1+self.tp)
-                self.buycount += 1
-                self.buy_count += 1
-                self.last_buy_price = float(result['entryPrice'])
-                self.buy_active = True
-                fecha_actual = datetime.datetime.now()
-                fecha_formateada = fecha_actual.strftime("%Y-%m-%d %H:%M:%S")
-                # print(f'{Fore.BLUE}current_rsi:', self.current_rsi)
-                print(f'{Fore.GREEN}\nBuy number: {self.buy_count}\nDate: {fecha_formateada}\nRsi: {self.current_rsi}\nSymbol: {self.symbol}\nSide: {self.side}\nAmount: {self.order_amount_long}\nBuy_sl_price: {self.buy_sl_price}\nBuy_tp_price: {self.buy_tp_price}\n')
-               # print(fecha_formateada)
-                logging.info(
-                    f'Compra Long Numero: {self.buy_count}, Symbol: {self.symbol}, Side: {self.side}, Amount: {self.amount}, Buy_sl_price: {self.buy_sl_price}, Buy_tp_price: {self.buy_tp_price}')
-
-            elif self.side == 'sell':
-                self.sell_sl_price = float(result['entryPrice']) * (1+self.sl)
-                self.sell_tp_price = float(result['entryPrice']) * (1-self.tp)
-                self.sellcount += 1
-                self.sell_count += 1
-                self.last_sell_price = float(result['entryPrice'])
-                self.sell_active = True
-                fecha_actual = datetime.datetime.now()
-                fecha_formateada = fecha_actual.strftime("%Y-%m-%d %H:%M:%S")
-                # print(f'{Fore.BLUE}current_rsi:', self.current_rsi)
-                print(f'{Fore.RED}\nSell number: {self.sell_count}\nDate: {fecha_formateada}\nRsi: {self.current_rsi}\nSymbol: {self.symbol}\nSide: {self.side}\nAmount: {self.order_amount_short}\nSell_sl_price: {self.sell_sl_price}\nSell_tp_price: {self.sell_tp_price}\n')
-                # print(fecha_formateada)
-                logging.info(
-                    f'Compra Short Numero: {self.sell_count}, Symbol: {self.symbol}, Side: {self.side}, Amount: {self.amount}, Sell_sl_price: {self.sell_sl_price}, Sell_tp_price: {self.sell_tp_price}')
-            # Save State
+            # Guardar el estado después de crear la orden
             self.save_state()
 
         except Exception as e:
