@@ -337,15 +337,7 @@ class trader():
                     if self.side == 'sell':
                         self.sellcount = 0
                         self.tradecount_short = 0
-            else:
-                # No hay posiciones abiertas, establecer `buycount` o `sellcount` en 0
-                if self.side == 'buy':
-                    self.buycount = 0
-                    self.tradecount_long = 0
-                elif self.side == 'sell':
-                    self.sellcount = 0
-                    self.tradecount_short = 0
-            
+                  
             # Calcular las cantidades de orden antes de los bloques if/elif
             self.order_amount_long = self.amount * (1 + (self.incre_amt_percent_long * self.buycount))
             self.order_amount_short = self.amount * (1 + (self.incre_amt_percent_short * self.sellcount))
