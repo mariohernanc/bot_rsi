@@ -322,25 +322,37 @@ class trader():
                     if position['symbol'] == self.symbol:
                         if position['side'] == 'long' and position['contracts'] > 0:
                             position_found_long = True
+                            self.last_buy_price = position['entryPrice']
                             self.total_amount_long = float(position['contracts'])
                             
                         elif position['side'] == 'short' and position['contracts'] > 0:
                             position_found_short = True
+                            self.last_sell_price = position['entryPrice']
                             self.total_amount_short = float(position['contracts'])
                             
 
                 # Si no se encontró ninguna posición abierta para el símbolo, establecer `buycount` o `sellcount` en 0
                 if not position_found_long:
                     if self.side == 'buy':
+                        self.last_buy_price = 0
+                        self.buy_count = 0
                         self.buycount = 0
                         self.tradecount_long = 0
                         self.total_amount_long = self.amount
+                        self.order_amount_long = 0
+                        self.buy_active = False
+                        self.buy_first_order = True
 
                 if not position_found_short:
                     if self.side == 'sell':
+                        self.last_sell_price = 0
+                        self.sell_count = 0
                         self.sellcount = 0
                         self.tradecount_short = 0
                         self.total_amount_short = self.amount
+                        self.order_amount_short = 0
+                        self.sell_active = False
+                        self.sell_first_order = True
             
             # Calcular las cantidades de orden antes de los bloques if/elif
             self.order_amount_long = self.amount * (1 + (self.incre_amt_percent_long * self.buycount))
@@ -400,21 +412,45 @@ class trader():
             
             # Comprobar si hay posiciones abiertas para actualizar los precios last_buy_price y last_sell_price
             
+           # Inicializar banderas para comprobar si hay posiciones abiertas
+            self.position_found_long = False
+            self.position_found_short = False
+
+            # Comprobar si hay posiciones abiertas y ajustar `buycount` o `sellcount`
             if res:
                 for position in res:
                     if position['symbol'] == self.symbol:
                         if position['side'] == 'long' and position['contracts'] > 0:
-                            self.last_buy_price = float(position['entryPrice'])
+                            self.last_buy_price = position['entryPrice']
                             self.total_amount_long = float(position['contracts'])
+                            self.position_found_long = True
+                            # Mantener el valor original de `buycount` que se cargó desde el archivo pickle
                         elif position['side'] == 'short' and position['contracts'] > 0:
-                            self.last_sell_price = float(position['entryPrice'])
+                            self.last_sell_price = position['entryPrice']
                             self.total_amount_short = float(position['contracts'])
-            else:
-                # No hay posiciones abiertas, mantenemos last_buy_price y last_sell_price en 0
+                            self.position_found_short = True
+                            # Mantener el valor original de `sellcount` que se cargó desde el archivo pickle
+
+            # Si no se encontró ninguna posición abierta para el símbolo, establecer `buycount` o `sellcount` en 0
+            if not self.position_found_long:
                 self.last_buy_price = 0
-                self.last_sell_price = 0
+                self.buy_count = 0
+                self.buycount = 0
+                self.tradecount_long = 0
+                self.buy_active = False
+                self.buy_first_order = True
                 self.total_amount_long = self.amount
+                self.order_amount_long = 0
+
+            if not self.position_found_short:
+                self.last_sell_price = 0
+                self.sell_count = 0
+                self.sellcount = 0
+                self.tradecount_short = 0
+                self.sell_active = False
+                self.sell_first_order = True
                 self.total_amount_short = self.amount
+                self.order_amount_short = 0
 
             # Debugging Print para self.last_price
             print(f"[DEBUG] - Last Price (self.last_price): {self.last_price}")
@@ -467,33 +503,6 @@ class trader():
 
             print(f"[DEBUG] - Buy SL Price: {self.buy_sl_price}, Buy TP Price: {self.buy_tp_price}")
             print(f"[DEBUG] - Sell SL Price: {self.sell_sl_price}, Sell TP Price: {self.sell_tp_price}")
-
-            # Inicializar banderas para comprobar si hay posiciones abiertas
-            position_found_long = False
-            position_found_short = False
-
-            # Comprobar si hay posiciones abiertas y ajustar `buycount` o `sellcount`
-            if res:
-                for position in res:
-                    if position['symbol'] == self.symbol:
-                        if position['side'] == 'long' and position['contracts'] > 0:
-                            position_found_long = True
-                            # Mantener el valor original de `buycount` que se cargó desde el archivo pickle
-                        elif position['side'] == 'short' and position['contracts'] > 0:
-                            position_found_short = True
-                            # Mantener el valor original de `sellcount` que se cargó desde el archivo pickle
-
-            # Si no se encontró ninguna posición abierta para el símbolo, establecer `buycount` o `sellcount` en 0
-            if not position_found_long:
-                self.buycount = 0
-                self.tradecount_long = 0
-                self.buy_active = False
-                self.buy_first_order = True
-            if not position_found_short:
-                self.sellcount = 0
-                self.tradecount_short = 0
-                self.sell_active = False
-                self.sell_first_order = True
 
             # Calcular las cantidades de orden después de la validación
             self.next_buy_long = (self.last_buy_price * (1 - (self.incre_price_percent_long * self.buycount)))
